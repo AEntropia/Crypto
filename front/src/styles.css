@@ -106,6 +106,8 @@ body::before {
 }
 
 .container {
+  align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -184,8 +186,8 @@ input:focus, textarea:focus {
 
 /* Card estilo terminal */
 .card {
-  height: 50%;
-  width: 50%;
+  height: 100%;
+  width: 100%;
   background-color: rgba(0, 10, 0, 0.8);
   border: 1px solid var(--hacker-green);
   border-radius: 5px;
