@@ -39,7 +39,7 @@ npm ou yarn
 ### 1️⃣ Clone o repositório
 ```bash
 git clone [URL_DO_REPOSITÓRIO]
-cd [NOME_DO_REPOSITÓRIO]/backend
+cd [NOME_DO_REPOSITÓRIO]/back
 ```
 
 ### 2️⃣ Instale as dependências
@@ -69,7 +69,7 @@ node app.js
 
 ### 1️⃣ Acesse a pasta do frontend
 ```bash
-cd ../frontend
+cd ../front
 ```
 
 ### 2️⃣ Instale as dependências
