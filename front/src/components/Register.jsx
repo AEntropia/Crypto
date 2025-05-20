@@ -59,7 +59,7 @@ const Register = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="modal">
+    <div className="modal-overlay">
       <div className="modal-content">
         <div className="card-header">
           <h3>Registro de Novo Usuário</h3>

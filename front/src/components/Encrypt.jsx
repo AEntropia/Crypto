@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import axios from "axios"; // Make sure to install axios: npm install axios
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "../styles.css"; // Assuma que temos um arquivo CSS para estilização
 
 const Encrypt = () => {
   const [message, setMessage] = useState("");
@@ -8,6 +9,32 @@ const Encrypt = () => {
   const [hash, setHash] = useState("");
   const [loading, setLoading] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState([]);
+  
+  // Estados para o modal de email
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [username, setUsername] = useState("Usuário"); // Nome padrão
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  // Buscar nome de usuário se estiver logado (exemplo)
+  useEffect(() => {
+    const fetchUsername = async () => {
+      try {
+        // Imagine que temos uma API para verificar se o usuário está logado
+        const response = await axios.get('/api/user/current');
+        if (response.data && response.data.username) {
+          setUsername(response.data.username);
+        }
+      } catch (error) {
+        // Se não estiver logado, mantém o valor padrão
+        console.log("Usuário não está logado ou erro ao buscar informações");
+      }
+    };
+    
+    fetchUsername();
+  }, []);
 
   const handleEncrypt = async () => {
     if (!message) {
@@ -35,10 +62,56 @@ const Encrypt = () => {
 
       addToConsole("Criptografia concluída com sucesso.");
       addToConsole(`Hash de verificação gerado: ${hash}`);
+      
+      // Pergunta se deseja enviar por email
+      setShowEmailPrompt(true);
     } catch (error) {
       addToConsole(`ERRO: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!recipientEmail) {
+      addToConsole("ERRO: Endereço de email do destinatário é obrigatório.");
+      return;
+    }
+
+    setSendingEmail(true);
+    addToConsole("Enviando mensagem criptografada por email...");
+
+    try {
+      // Obtém a URL base do site atual
+      const baseUrl = window.location.origin;
+      
+      const response = await axios.post('/api/crypto/send-email', {
+        recipientEmail,
+        username,
+        encryptedMessage,
+        hash,
+        baseUrl
+      });
+      
+      addToConsole("Email enviado com sucesso!");
+      setEmailSent(true);
+      
+      // Fecha o modal após 2 segundos
+      setTimeout(() => {
+        setShowEmailModal(false);
+        setEmailSent(false);
+      }, 2000);
+    } catch (error) {
+      addToConsole(`ERRO ao enviar email: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const handleEmailPromptResponse = (willSend) => {
+    setShowEmailPrompt(false);
+    if (willSend) {
+      setShowEmailModal(true);
     }
   };
 
@@ -59,6 +132,20 @@ const Encrypt = () => {
       })
       .catch((err) => {
         addToConsole("Erro ao copiar texto: " + err);
+      });
+  };
+
+  // Função para copiar a mensagem formatada para o email
+  const copyFormattedMessage = () => {
+    const formattedMessage = `${username} te mandou uma mensagem criptografada ${encryptedMessage} ${hash} acesse o site ${window.location.origin}/decrypt/${hash} para descriptografar!`;
+    
+    navigator.clipboard
+      .writeText(formattedMessage)
+      .then(() => {
+        addToConsole("Mensagem formatada copiada para a área de transferência.");
+      })
+      .catch((err) => {
+        addToConsole("Erro ao copiar mensagem formatada: " + err);
       });
   };
 
@@ -160,6 +247,89 @@ const Encrypt = () => {
               * Guarde este hash para verificar a integridade da mensagem ao
               descriptografar.
             </p>
+          </div>
+
+          <div className="form-group">
+            <label>Mensagem Formatada para Compartilhar:</label>
+            <div className="result-box" style={{ marginBottom: "10px", fontSize: "0.9rem" }}>
+              {`${username} te mandou uma mensagem criptografada ${encryptedMessage} ${hash} acesse o site ${window.location.origin}/decrypt/${hash} para descriptografar!`}
+            </div>
+            <button
+              type="button"
+              onClick={copyFormattedMessage}
+              style={{ marginRight: "10px" }}
+            >
+              Copiar Mensagem Formatada
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowEmailModal(true)}
+              style={{ backgroundColor: "#28a745" }}
+            >
+              Enviar por E-mail
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação para enviar email */}
+      {showEmailPrompt && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Deseja enviar esta mensagem por email?</h3>
+            <div className="modal-buttons">
+              <button onClick={() => handleEmailPromptResponse(true)}>Sim</button>
+              <button onClick={() => handleEmailPromptResponse(false)}>Não</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para enviar email */}
+      {showEmailModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Enviar Mensagem Criptografada</h3>
+            
+            {emailSent ? (
+              <div className="success-message">
+                Email enviado com sucesso!
+              </div>
+            ) : (
+              <>
+                <div className="form-group">
+                  <label htmlFor="recipient-email">Email do Destinatário:</label>
+                  <input
+                    type="email"
+                    id="recipient-email"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="sender-name">Seu Nome (exibido no email):</label>
+                  <input
+                    type="text"
+                    id="sender-name"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+                
+                <div className="modal-buttons">
+                  <button 
+                    onClick={handleSendEmail} 
+                    disabled={sendingEmail}
+                    style={{ backgroundColor: "#28a745" }}
+                  >
+                    {sendingEmail ? "Enviando..." : "Enviar Email"}
+                  </button>
+                  <button onClick={() => setShowEmailModal(false)}>Cancelar</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
